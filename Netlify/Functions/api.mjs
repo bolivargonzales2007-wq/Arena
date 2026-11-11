@@ -15,7 +15,7 @@ async function mail(id,c,L,sub,ship,total){if(!tx)return false;
  const from=`"${STORE}" <${E.SMTP_USER}>`;
  const [a]=await Promise.allSettled([tx.sendMail({from,to:ORDER_EMAIL,replyTo:c.email,subject:`Nuevo pedido #${id} - ${usd(total)}`,
   html:`<h2>Pedido #${id}</h2><p><b>${esc(c.name)}</b><br>${esc(c.email)} · ${esc(c.phone)}<br>${esc(c.address)}<br>Pago: ${esc(c.pay)}<br>Notas: ${esc(c.notes)}</p>${t}`}),
-  tx.sendMail({from,to:c.email,subject:`Recibimos tu pedido #${id}`,html:`<h2>¡Gracias, ${esc(c.name)}!</h2><p>Recibimos tu pedido y te contactaremos pronto.</p>${t}`})]);
+  tx.sendMail({from,to:c.email,replyTo:ORDER_EMAIL,subject:`Recibimos tu pedido #${id}`,html:`<h2>¡Gracias, ${esc(c.name)}!</h2><p>Recibimos tu pedido y te contactaremos pronto.</p>${/yappy/i.test(c.pay)&&E.YAPPY_NUMBER?`<p><b>Paga ${usd(total)} por Yappy al ${esc(E.YAPPY_NUMBER)}</b>${E.YAPPY_NAME?' ('+esc(E.YAPPY_NAME)+')':''}. Responde este correo con el comprobante.</p>`:''}${t}`})]);
  if(a.status==='rejected')console.error('Email falló:',a.reason?.message);return a.status==='fulfilled'}
 async function order(req){const b=await req.json().catch(()=>({})),r=b.customer||{};
  const c={name:cut(r.name),email:cut(r.email),phone:cut(r.phone),address:cut(r.address,400),pay:cut(r.pay),notes:cut(r.notes,400)};
@@ -29,7 +29,7 @@ async function order(req){const b=await req.json().catch(()=>({})),r=b.customer|
  const o={id,customer:c,items:L,total,status:'nuevo',emailed:0,created:new Date().toISOString().slice(0,16).replace('T',' ')};
  await DB().setJSON('order-'+String(id).padStart(6,'0'),o);
  const sent=await mail(id,c,L,sub,ship,total);if(sent){o.emailed=1;await DB().setJSON('order-'+String(id).padStart(6,'0'),o)}
- return J(200,{id,emailed:sent})}
+ return J(200,{id,emailed:sent,total,yappy:/yappy/i.test(c.pay)?(E.YAPPY_NUMBER||''):'',yname:E.YAPPY_NAME||''})}
 async function admin(req,p,m){let x;
  if(p==='/api/admin/products'&&m==='GET')return J(200,await prods());
  if(p==='/api/admin/products'&&m==='POST'){const P=await prods();const id=Math.max(0,...P.map(q=>q.id))+1;P.push({id,name:'Nuevo producto',category:'futbol',description:'Descripción',price:2999,image:'/img/seed-1.svg',sizes:['S','M','L','XL'],stock:100,active:1});await saveP(P);return J(200,{id})}

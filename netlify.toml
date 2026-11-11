@@ -1,8 +1,12 @@
 [build]
-  publish = "public"
-  functions = "netlify/functions"
+  publish = "Public"
+  functions = "Netlify/Functions"
 [functions]
   node_bundler = "esbuild"
+[[redirects]]
+  from = "/img/*"
+  to = "/Img/:splat"
+  status = 200
 [[redirects]]
   from = "/admin"
   to = "/admin.html"

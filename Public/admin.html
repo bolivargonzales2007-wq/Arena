@@ -1,0 +1,40 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Panel — ARENA</title><meta name="robots" content="noindex">
+<style>
+:root{--blue:#0071e3;--ink:#1d1d1f;--frost:#f5f5f7;--ash:#707070;--line:#d2d2d7}*{box-sizing:border-box;margin:0}
+body{font:400 15px/1.45 'SF Pro Text',Inter,system-ui,sans-serif;background:var(--frost);color:var(--ink);letter-spacing:-.011em}
+header{background:#1d1d1f;color:#f5f5f7;padding:12px 24px;display:flex;gap:20px;align-items:center}header b{margin-right:auto;letter-spacing:.08em}header button{background:none;border:0;color:#f5f5f7;font:inherit;cursor:pointer;opacity:.7}header .on{opacity:1;border-bottom:1px solid #fff}
+main{max-width:1100px;margin:32px auto;padding:0 20px}h1{font:600 32px 'SF Pro Display',Inter,sans-serif;margin-bottom:20px}
+.btn{border-radius:980px;padding:9px 18px;font:inherit;border:1px solid var(--blue);background:var(--blue);color:#fff;cursor:pointer}.btn.o{background:transparent;color:#0066cc;border-color:#0066cc}
+input,select,textarea{font:inherit;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--frost);width:100%}input:focus,select:focus,textarea:focus{outline:2px solid var(--blue)}
+.row{background:#fff;border-radius:8px;padding:20px;margin-bottom:14px;display:grid;grid-template-columns:150px 1fr;gap:20px}.row img{width:150px;height:150px;object-fit:contain;background:var(--frost);border-radius:8px}
+.f{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px}.f .w{grid-column:1/-1}.f label{font-size:12px;color:var(--ash)}.act{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.login{max-width:340px;margin:20vh auto;text-align:center;display:grid;gap:12px}.o{background:#fff;border-radius:8px;padding:16px;margin-bottom:12px;display:grid;gap:4px}.tag{font-size:12px;color:var(--ash)}
+@media(max-width:700px){.row{grid-template-columns:1fr}.f{grid-template-columns:1fr 1fr}}
+</style></head><body><div id="app"></div>
+<script>
+const app=document.getElementById('app'),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const api=async(u,m='GET',b)=>{const r=await fetch(u,{method:m,headers:{'Content-Type':'application/json'},body:b?JSON.stringify(b):undefined});if(r.status===401){login();throw 0}const j=await r.json();if(!r.ok)throw new Error(j.error);return j};
+function login(){app.innerHTML=`<form class="login"><h1>Panel de ARENA</h1><input type="password" id="pw" placeholder="Contraseña" autofocus><button class="btn">Entrar</button><p id="e" style="color:#c00"></p></form>`;
+app.querySelector('form').onsubmit=async e=>{e.preventDefault();const r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw.value})});r.ok?home():e.target.querySelector('#e').textContent='Contraseña incorrecta'}}
+function home(tab='p'){app.innerHTML=`<header><b>ARENA · PANEL</b><button data-t="p" class="${tab=='p'?'on':''}">Productos</button><button data-t="o" class="${tab=='o'?'on':''}">Pedidos</button><a href="/" style="color:#fff;opacity:.7;font-size:13px" target="_blank">Ver tienda ↗</a></header><main id="m"></main>`;
+app.querySelectorAll('header button').forEach(b=>b.onclick=()=>home(b.dataset.t));tab=='p'?products():orders()}
+async function products(){const L=await api('/api/admin/products');m.innerHTML=`<h1>Productos</h1><p style="margin-bottom:16px"><button class="btn" id="new">+ Nuevo producto</button></p>`+L.map(p=>`<div class="row" data-id="${p.id}" data-img="${esc(p.image)}"><img src="${esc(p.image)}"><div class="f">
+<div><label>Nombre</label><input name="name" value="${esc(p.name)}"></div><div><label>Categoría</label><select name="category"><option value="futbol" ${p.category=='futbol'?'selected':''}>Fútbol</option><option value="basket" ${p.category=='basket'?'selected':''}>Básquet</option></select></div>
+<div><label>Precio (USD)</label><input name="price" type="number" step="0.01" min="0" value="${p.price/100}"></div><div><label>Stock</label><input name="stock" type="number" min="0" value="${p.stock}"></div>
+<div class="w"><label>Tallas (separadas por coma)</label><input name="sizes" value="${esc(p.sizes.join(','))}"></div><div class="w"><label>Descripción</label><textarea name="description" rows="2">${esc(p.description)}</textarea></div>
+<div class="w act"><label><input type="checkbox" name="active" style="width:auto" ${p.active?'checked':''}> Visible en la tienda</label><label class="btn o">Cambiar imagen<input type="file" accept="image/png,image/jpeg,image/webp" hidden></label><button class="btn save">Guardar</button><button class="btn o del">Eliminar</button><span class="tag"></span></div></div></div>`).join('');
+new_.onclick=async()=>{await api('/api/admin/products','POST');products()}}
+document.addEventListener('change',async e=>{if(e.target.type!=='file')return;const row=e.target.closest('.row'),f=e.target.files[0],tag=row.querySelector('.tag');if(!f)return;if(f.size>4e6){tag.textContent='Máx 4 MB';return}
+const data=await new Promise(r=>{const x=new FileReader();x.onload=()=>r(x.result);x.readAsDataURL(f)});try{const j=await api('/api/admin/upload','POST',{data});row.dataset.img=j.url;row.querySelector('img').src=j.url;tag.textContent='Imagen lista — pulsa Guardar'}catch(err){tag.textContent=err.message}});
+document.addEventListener('click',async e=>{const row=e.target.closest('.row');
+if(e.target.classList.contains('save')){const g=n=>row.querySelector(`[name=${n}]`);const tag=row.querySelector('.tag');
+try{await api('/api/admin/products/'+row.dataset.id,'PUT',{name:g('name').value,category:g('category').value,description:g('description').value,price:Math.round(g('price').value*100),stock:+g('stock').value,sizes:g('sizes').value.split(',').map(s=>s.trim()).filter(Boolean),active:g('active').checked,image:row.dataset.img});tag.textContent='Guardado ✓'}catch(err){tag.textContent=err.message}}
+if(e.target.classList.contains('del')&&confirm('¿Eliminar este producto? No se puede deshacer.')){await api('/api/admin/products/'+row.dataset.id,'DELETE');products()}});
+const new_={set onclick(f){setTimeout(()=>document.getElementById('new').onclick=f)}};
+async function orders(){const L=await api('/api/admin/orders');m.innerHTML='<h1>Pedidos</h1>'+(L.length?L.map(o=>`<div class="o"><b>#${o.id} · ${esc(o.customer.name)} · $${(o.total/100).toFixed(2)}</b>
+<span>${o.items.map(i=>`${esc(i.name)} (${esc(i.size)}) x${i.qty}`).join(' · ')}</span><span class="tag">${esc(o.customer.email)} · ${esc(o.customer.phone)} · ${esc(o.customer.address)} · ${esc(o.customer.pay)}${o.customer.notes?' · Notas: '+esc(o.customer.notes):''}</span>
+<span class="tag">${o.created} UTC · ${o.emailed?'Correo enviado ✓':'⚠ Correo NO enviado (revisa SMTP)'}</span>
+<select data-o="${o.id}" style="width:180px">${['nuevo','pagado','enviado','entregado','cancelado'].map(s=>`<option ${o.status==s?'selected':''}>${s}</option>`).join('')}</select></div>`).join(''):'<p>Aún no hay pedidos.</p>')}
+document.addEventListener('change',e=>{if(e.target.dataset.o)api('/api/admin/orders/'+e.target.dataset.o,'PATCH',{status:e.target.value})});
+api('/api/admin/orders').then(()=>home()).catch(()=>{});
+</script></body></html>

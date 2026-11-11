@@ -49,7 +49,7 @@ $('#items').innerHTML=cart.length?cart.map((i,k)=>{const p=P.find(p=>p.id===i.id
 const t=totals();$('#sum').innerHTML=`Subtotal ${money(t.sub)}<br>Envío ${t.ship?money(t.ship):'Gratis'}<br><b>Total ${money(t.total)}</b>`;$('#f').style.display=cart.length?'grid':'none'}
 $('#f').onsubmit=async e=>{e.preventDefault();const go=$('#go');go.disabled=true;go.textContent='Enviando…';
 try{const r=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customer:Object.fromEntries(new FormData(e.target)),items:cart})}),j=await r.json();
-if(!r.ok)throw new Error(j.error);cart=[];save();cartUI();e.target.reset();$('#items').innerHTML='';$('#sum').innerHTML='';$('#msg').innerHTML=`<b>¡Pedido #${j.id} recibido!</b> Te contactaremos muy pronto.`}
+if(!r.ok)throw new Error(j.error);cart=[];save();cartUI();e.target.reset();$('#items').innerHTML='';$('#sum').innerHTML='';$('#msg').innerHTML=`<b>¡Pedido #${j.id} recibido!</b> Te contactaremos muy pronto.`+(j.yappy?`<br><br><b>Paga ${money(j.total)} por Yappy al ${esc(j.yappy)}</b>${j.yname?' ('+esc(j.yname)+')':''}. Envía el comprobante respondiendo al correo de confirmación.`:'')}
 catch(err){$('#msg').textContent=err.message||'No se pudo enviar, intenta de nuevo.'}go.disabled=false;go.textContent='Realizar pedido'};
 fetch('/api/products').then(r=>r.json()).then(r=>{P=r;show();cartUI();save()});save();
 </script></body></html>
